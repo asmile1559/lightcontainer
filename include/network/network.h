@@ -1,7 +1,7 @@
 #ifndef LIGHTCONTAINER_NETWORK_H
 #define LIGHTCONTAINER_NETWORK_H
 
-#define _GUN_SOURCE
+#define _GNU_SOURCE
 #include <sys/types.h>
 
 
@@ -14,6 +14,12 @@
 #define BR_UP_FMT "ip link set br%d up"
 #define LINK_ETH_BR_FMT "ip link set dev eth%d master br%d"
 #define LINK_VETH_BR_FMT "ip link set dev veth%d master br%d"
+
+#define DEFAULT_HOST_VETHID 0
+#define DEFAULT_CONTAINER_VETHID 1
+
+#define DEFAULT_HOST_IP "10.0.0.1/24"
+#define DEFAULT_CONTAINER_IP "10.0.0.2/24"
 
 
 int create_veth_pair(int veth0, int veth1);

@@ -1,7 +1,7 @@
 #ifndef LIGHTCONTAINER_SUBSYSTEM_H
 #define LIGHTCONTAINER_SUBSYSTEM_H
 
-#define _GUN_SOURCE
+#define _GNU_SOURCE
 #include <sys/types.h>
 #include <unistd.h>
 

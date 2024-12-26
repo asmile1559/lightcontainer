@@ -39,14 +39,14 @@ int chrootfs(char *nrfs){
     }
 
     chdir("/") ;
-    if (umount2("/old_rootfs", MNT_DETACH) < 0){
-        perror("umount2 error");
-        return -1;
-    }
-    if (rmdir("/old_rootfs") < 0){
-        perror("rmdir error");
-        return -1;
-    }
+    // if (umount2("/old_rootfs", MNT_DETACH) < 0){
+    //     perror("umount2 error");
+    //     return -1;
+    // }
+    // if (rmdir("/old_rootfs") < 0){
+    //     perror("rmdir error");
+    //     return -1;
+    // }
     
     if ((stat("/proc", &s) != 0) && mkdir("/proc", 0777) < 0){
         perror("mkdir /proc error");
