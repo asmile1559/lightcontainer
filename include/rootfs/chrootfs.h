@@ -3,7 +3,6 @@
 
 #define _GUN_SOURCE
 #define DEFAULT_NEW_ROOT_FS "/tmp/rootfs"
-
-int chrootfs(char *nrfs);
-
+#define OLDROOTFS "oldrootfs"
+int chrootfs(char *nrfs, char *orfs);
 #endif

@@ -40,10 +40,11 @@ int lightcontainer(void *args)
         opt->vethIP = DEFAULT_CONTAINER_IP;
     }
 
-    if (chrootfs(opt->nrfs) < 0)
+    if (chrootfs(opt->nrfs, opt->orfs) < 0)
     {
         return -1;
     }
+
     if (sethostname(opt->hostname, strlen(opt->hostname)) < 0) 
     {
         perror("set host name error");
@@ -55,13 +56,16 @@ int lightcontainer(void *args)
         perror("set veth error");
         return -1;
     }
-
     if (veth_up(opt->vethID) < 0) {
         perror("veth up error");
         return -1;
     }
-    char *const *exargs = {"/bin/bash", NULL};
-    execv("/bin/bash", exargs);
+
+    char *exargs[] = {"ls", NULL};
+    if (execv("/bin/bash", exargs) < 0) {
+        perror("execv error");
+        return -1;
+    } 
     return 0;
 }
 
@@ -69,7 +73,7 @@ pid_t run_container(void *args)
 {
     pid_t pid;
     char *stacktop = stack + STACK_SIZE;
-    int flags = SIGCHLD|CLONE_NEWUTS|CLONE_NEWNS|CLONE_NEWUSER|CLONE_NEWNET|CLONE_NEWPID;
+    int flags = SIGCHLD|CLONE_NEWUTS|CLONE_NEWNS|CLONE_NEWNET|CLONE_NEWPID;
     pid = clone(lightcontainer, stacktop, flags, args);
     return pid;    
 }

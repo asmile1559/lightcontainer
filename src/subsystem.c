@@ -48,7 +48,7 @@ subsystem *init_subsystem(resource_type t)
     char dirpath[256];
     struct stat s;
     sprintf(dirpath, "%s/%s/"CGROUP_GROUP_NAME, cgctl.cgroup_root_path, name);
-    printf("%s\n", dirpath);
+    // printf("%s\n", dirpath);
     if ((stat(dirpath, &s) != 0) && mkdir(dirpath, 0755) < 0) {
         sprintf(errbuf, "subsystem %s init error.", name);
         perror(errbuf);

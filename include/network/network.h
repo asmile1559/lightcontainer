@@ -15,6 +15,8 @@
 #define LINK_ETH_BR_FMT "ip link set dev eth%d master br%d"
 #define LINK_VETH_BR_FMT "ip link set dev veth%d master br%d"
 
+#define LINK_2DEBICE_FMT "ip link set dev %s master %s"
+
 #define DEFAULT_HOST_VETHID 0
 #define DEFAULT_CONTAINER_VETHID 1
 
@@ -30,4 +32,5 @@ int create_bridge(int bridgeID);
 int bridge_up(int bridgeID);
 int link_eth_br(int ethID, int bridgeID);
 int link_veth_br(int vethID, int bridgeID);
+int link2device(char *dev1, char *dev2);
 #endif

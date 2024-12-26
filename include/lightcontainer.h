@@ -8,6 +8,7 @@ typedef struct {
     int vethID;
     int _;
     char *nrfs;
+    char *orfs;
     char *hostname;
     char *vethIP;
 }lc_opt;

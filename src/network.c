@@ -85,3 +85,13 @@ int link_veth_br(int vethID, int bridgeID){
     }
     return 0;    
 }
+
+int link2device(char *dev1, char *dev2){
+    char cmd[100];
+    sprintf(cmd, LINK_2DEBICE_FMT, dev1, dev2);
+    if (system(cmd) < 0){
+        perror("link_veth_br error");
+        return -1;
+    }
+    return 0;    
+}
