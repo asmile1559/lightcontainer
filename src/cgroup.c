@@ -8,9 +8,9 @@
 #include <sys/types.h>
 #include <stdlib.h>
 
-cgroupctl cgctl;
+cgroupctl_t cgctl;
 
-int init_cgroupctl(resource_type t){
+int init_cgroupctl(resource_type t, char *container_id){
     cgctl.cgroup_root_path = CGROUP_ROOT_PATH;
     cgctl.t = t;
     for (int i = 0; i < CGROUP_CTR_NUM; i++){
@@ -18,7 +18,7 @@ int init_cgroupctl(resource_type t){
         int msk = 1 << i;
         if (t & msk) {
             // printf("msk=%d\n", msk);
-            cgctl.ss[i] = init_subsystem(msk);
+            cgctl.ss[i] = init_subsystem(msk, container_id);
             if (cgctl.ss[i] == NULL) {
                 return -1;
             }
@@ -32,7 +32,7 @@ int cg_set(resource_type t, char *resource){
         fprintf(stderr, "set a invalid cgroup\n");
         return -1;
     } 
-    subsystem *ss = cgctl.ss[bit2num(t)];
+    subsystem_t *ss = cgctl.ss[bit2num(t)];
     if (ss == NULL) {
         printf("no!\n");
         return -1;

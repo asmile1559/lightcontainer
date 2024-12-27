@@ -14,8 +14,11 @@ int chrootfs(char *nrfs, char *orfs){
         nrfs = DEFAULT_NEW_ROOT_FS;
     }
     
+    char oldroot[128];
+    sprintf(oldroot, "%s/%s", nrfs, orfs);
+    // printf("%s\n", oldroot);
     struct stat s; 
-    if((stat(orfs, &s) != 0) && mkdir(orfs, 0777) < 0){
+    if((stat(oldroot, &s) != 0) && mkdir(oldroot, 0777) < 0){
         perror("make old root fs error");
         return -1;
     }
@@ -30,7 +33,7 @@ int chrootfs(char *nrfs, char *orfs){
         return -1;
     }
 
-    if (pivot_root(nrfs, orfs) < 0) {
+    if (pivot_root(nrfs, oldroot) < 0) {
         printf("nrfs: %s\norfs: %s\n", nrfs, orfs);
         perror("pivot_root error");
         return -1;
@@ -38,12 +41,12 @@ int chrootfs(char *nrfs, char *orfs){
     
     chdir("/");
 
-    if (umount2("./"OLDROOTFS, MNT_DETACH) < 0){
+    if (umount2(orfs, MNT_DETACH) < 0){
         perror("umount2 error");
         return -1;
     }
 
-    if (rmdir("./"OLDROOTFS) < 0){
+    if (rmdir(orfs) < 0){
         perror("rmdir error");
         return -1;
     }

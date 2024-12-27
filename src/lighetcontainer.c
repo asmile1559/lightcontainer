@@ -8,59 +8,84 @@
 #include <sched.h>
 #include <signal.h>
 #include <errno.h>
-
+#include <time.h>
 
 #define STACK_SIZE (1024 * 1024)
 char stack[STACK_SIZE];
 
-int lightcontainer(void *args)
-{
-    lc_opt *opt = args;
-    if (opt == NULL){
-        opt = (lc_opt *)malloc(sizeof(lc_opt));
-        if (opt == NULL) {
-            perror("malloc failed");
-            return -1;
+int handle_container_network(veth_t *v, int *retry){
+    int r;
+    if (retry == NULL) {
+        r = 5;
+    } else {
+        r = *retry;
+    }
+    
+    while (r >= 0){
+        sleep(1);
+        r--;
+        if (setup_veth(v) == 0){
+            break;
         }
-        memset(opt, 0, sizeof(lc_opt));
+        fprintf(stderr, "remain retry times: %d", r);
+        perror("");
     }
 
-    if (opt->nrfs == NULL){
-        opt->nrfs = DEFAULT_NEW_ROOT_FS;
-    }
-    if (opt->hostname == NULL) {
-        opt->hostname = (char *)malloc(sizeof(char) * 9);
-        sprintf(opt->hostname, "%08x", rand() % 1000000000);
-    }
-    if (opt->vethID == 0) {
-        opt->vethID = DEFAULT_CONTAINER_VETHID;
-    }
-
-    if (opt->vethIP == NULL) {
-        opt->vethIP = DEFAULT_CONTAINER_IP;
-    }
-
-    if (chrootfs(opt->nrfs, opt->orfs) < 0)
-    {
+    if (r == 0) {
+        printf(stderr, "handle_container_network error");
+        perror("");
         return -1;
     }
 
-    if (sethostname(opt->hostname, strlen(opt->hostname)) < 0) 
-    {
+    if (veth_up(v) < 0) {
+        perror("veth up error");
+        return -1;
+    }
+}
+
+int lightcontainer(void *args)
+{
+    container_t *inst = args;
+
+    if (inst == NULL){
+        inst = (container_t *)malloc(sizeof(container_t));
+        if (inst == NULL) {
+            perror("malloc failed");
+            return -1;
+        }
+        memset(inst, 0, sizeof(container_t));
+    }
+
+    if (inst->nrfs == NULL){
+        inst->nrfs = DEFAULT_NEW_ROOT_FS;
+    }
+
+    if (inst->hostname == NULL) {
+        inst->hostname = inst->container_id;
+    }
+
+    if (inst->veth.id == NULL) {
+        inst->veth.id = DEFAULT_CONTAINER_VETHID;
+    }
+
+    if (inst->veth.ip == NULL) {
+        inst->veth.ip = DEFAULT_CONTAINER_IP;
+    }
+    // char abs_oldroot[128];
+    // sprintf(abs_oldroot, "%s/%s", inst->nrfs, inst->orfs);
+    if (chrootfs(inst->nrfs, inst->orfs) < 0) {
+        return -1;
+    }
+
+    if (sethostname(inst->hostname, strlen(inst->hostname)) < 0) {
         perror("set host name error");
         return -1;
     }
 
-    sleep(1);
-    if (setup_veth(opt->vethIP, opt->vethID) < 0){
-        perror("set veth error");
+    if (handle_container_network(&inst->veth, NULL) < 0){
         return -1;
     }
-    if (veth_up(opt->vethID) < 0) {
-        perror("veth up error");
-        return -1;
-    }
-
+   
     char *exargs[] = {"ls", NULL};
     if (execv("/bin/bash", exargs) < 0) {
         perror("execv error");

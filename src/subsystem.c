@@ -9,34 +9,46 @@
 #include <errno.h>
 #include <string.h>
 
-subsystem *init_subsystem(resource_type t)
+void free_subsystem(subsystem_t *ss){
+
+    free(ss->ctl_root);
+    free(ss->ctl_file);
+    free(ss->tasks_file);
+    free(ss->procs_file);
+    free(ss);
+    ss = NULL;
+    return;
+}
+
+subsystem_t *init_subsystem(resource_type t, char *container_id)
 {
-    char *name;
+    char *type_name;
     char *ctlfile;
+    char errbuf[100];
     switch (t)
     {
     case CGROUP_CPU:
-        name = "cpu";
+        type_name = "cpu";
         ctlfile = CPU_CFS_QUOTA_US;
         break;
     case CGROUP_CPUSET:
-        name = "cpuset";
+        type_name = "cpuset";
         ctlfile = CPUSET_CPUS;
         break;
     case CGROUP_MEMORY:
-        name = "memory";
+        type_name = "memory";
         ctlfile = MEMORY_LIMIT_IN_BYTES;
         break;
     case CGROUP_PID:
-        name = "pids";
+        type_name = "pids";
         ctlfile = PIDS_MAX;
         break;
     case CGROUP_BLKIN:
-        name = "blkio";
+        type_name = "blkio";
         ctlfile = BLKIO_THROTTLE_READ_BPS_DEVICE;
         break;
     case CGROUP_BLKOUT:
-        name = "blkio";
+        type_name = "blkio";
         ctlfile = BLKIO_THROTTLE_WRITE_BPS_DEVICE;
         break;
     default:
@@ -44,53 +56,62 @@ subsystem *init_subsystem(resource_type t)
         break;
     }
 
-    char errbuf[100];
-    char dirpath[256];
+    subsystem_t *ss = (subsystem_t *)malloc(sizeof(subsystem_t));
+    ss->t = t;
+    ss->type_name = type_name;
+    ss->ctl_root = (char *)malloc(sizeof(char) * 128);
+    ss->ctl_file = (char *)malloc(sizeof(char) * 192);
+    ss->tasks_file = (char *)malloc(sizeof(char) * 172);
+    ss->procs_file = (char *)malloc(sizeof(char) * 172);
+
+    sprintf(ss->ctl_root, "%s/%s/"CGROUP_GROUP_NAME"/%s", cgctl.cgroup_root_path, type_name, container_id);
+    sprintf(ss->ctl_file, "%s/%s", ss->ctl_root, ctlfile);
+    sprintf(ss->tasks_file, "%s/tasks", ss->ctl_root);
+    sprintf(ss->procs_file, "%s/cgroup.procs", ss->ctl_root);
+
+    // printf("ctl_root: %s\nctl_file: %s\ntasks: %s\nprocs: %s\n", ss->ctl_root, ss->ctl_file, ss->tasks_file, ss->procs_file);
     struct stat s;
-    sprintf(dirpath, "%s/%s/"CGROUP_GROUP_NAME, cgctl.cgroup_root_path, name);
-    // printf("%s\n", dirpath);
-    if ((stat(dirpath, &s) != 0) && mkdir(dirpath, 0755) < 0) {
-        sprintf(errbuf, "subsystem %s init error.", name);
+    char cmd[256];
+    sprintf(cmd, "mkdir -p %s", ss->ctl_root);
+    if ((stat(ss->ctl_root, &s) != 0) && system(cmd) < 0) {
+        sprintf(errbuf, "subsystem %s init error.", type_name);
         perror(errbuf);
         return NULL;
     }
 
-    subsystem *ss = (subsystem *)malloc(sizeof(subsystem));
-    ss->t = t;
-    ss->name = name;
-    ss->ctlfile = ctlfile;
     if (t == CGROUP_CPU) {
-        sprintf(dirpath, "%s/cpu/"CGROUP_GROUP_NAME"/%s", cgctl.cgroup_root_path,  CPU_CFS_PERIOD_US);
+        char dirpath[256];
+        sprintf(dirpath, "%s/%s", ss->ctl_root, CPU_CFS_PERIOD_US);
         int fd = open(dirpath, O_WRONLY|O_TRUNC);
         if (fd < 0) {
-            sprintf(errbuf, "subsystem %s init error.", ss->name);
+            sprintf(errbuf, "subsystem %s init error.", ss->type_name);
             perror(errbuf);
+            free_subsystem(ss);
             return NULL;
         }
 
-        if (write(fd, DEFAULT_CPU_CFS_QUOTA_US, strlen(DEFAULT_CPU_CFS_QUOTA_US)) < 0){
-            sprintf(errbuf, "subsystem %s init error.", ss->name);
+        if (write(fd, DEFAULT_CPU_CFS_PERIOD_US, strlen(DEFAULT_CPU_CFS_PERIOD_US)) < 0){
+            sprintf(errbuf, "subsystem %s init error.", ss->type_name);
             perror(errbuf);
+            free_subsystem(ss);
             return NULL;
         }
     }
     return ss;
 }
 
-int subsystem_set(subsystem *ss, char *resource)
+int subsystem_set(subsystem_t *ss, char *resource)
 {
     char errbuf[100];
-    char filepath[256];
-    sprintf(filepath, "%s/%s/"CGROUP_GROUP_NAME"/%s", cgctl.cgroup_root_path, ss->name, ss->ctlfile);
-    int fd = open(filepath, O_WRONLY|O_TRUNC);
+    int fd = open(ss->ctl_file, O_WRONLY|O_TRUNC);
     if (fd < 0) {
-        sprintf(errbuf, "subsystem %s set error.", ss->name);
+        sprintf(errbuf, "subsystem %s set error.", ss->type_name);
         perror(errbuf);
         return -1;
     }
 
     if (write(fd, resource, strlen(resource)) < 0){
-        sprintf(errbuf, "subsystem %s set error.", ss->name);
+        sprintf(errbuf, "subsystem %s set error.", ss->type_name);
         perror(errbuf);
         return -1;
     }
@@ -98,14 +119,12 @@ int subsystem_set(subsystem *ss, char *resource)
     return 0;
 }
 
-int subsystem_add(subsystem *ss, pid_t pid) 
+int subsystem_add(subsystem_t *ss, pid_t pid) 
 {
     char errbuf[100];
-    char filepath[256];
-    sprintf(filepath, "%s/%s/"CGROUP_GROUP_NAME"/tasks", cgctl.cgroup_root_path, ss->name);
-    int fd = open(filepath, O_WRONLY|O_APPEND);
+    int fd = open(ss->tasks_file, O_WRONLY|O_APPEND);
     if (fd < 0) {
-        sprintf(errbuf, "subsystem %s add error.", ss->name);
+        sprintf(errbuf, "subsystem %s add error.", ss->type_name);
         perror(errbuf);
         close(fd);
         return -1;
@@ -114,7 +133,7 @@ int subsystem_add(subsystem *ss, pid_t pid)
     char s_pid[6];
     int n = sprintf(s_pid, "%d", pid);
     if (write(fd, s_pid, n) < 0){
-        sprintf(errbuf, "%d, subsystem %s add error.", __LINE__,ss->name);
+        sprintf(errbuf, "%d, subsystem %s add error.", __LINE__,ss->type_name);
         perror(errbuf);
         close(fd);
         return -1;
@@ -123,16 +142,12 @@ int subsystem_add(subsystem *ss, pid_t pid)
     return 0;
 }
 
-int subsystem_remove(subsystem *ss) 
+int subsystem_remove(subsystem_t *ss) 
 {
     char errbuf[100];
-    char filepath[300];
-    char dirpath[256];
     char cmd[300];
-    sprintf(dirpath, "%s/%s/"CGROUP_GROUP_NAME, cgctl.cgroup_root_path, ss->name);
-    sprintf(filepath, "%s/cgroup.procs", dirpath);
 
-    FILE *file = fopen(filepath, "r");
+    FILE *file = fopen(ss->procs_file, "r");
     if (file == NULL) {
         perror("open file error");
         return -1;
@@ -149,9 +164,9 @@ int subsystem_remove(subsystem *ss)
                 line[read - 1] = '\0';
             }
             read--;
-            sprintf(cmd, "bash -c 'echo %s | tee /sys/fs/cgroup/%s/cgroup.procs'", line, ss->name);
+            sprintf(cmd, "bash -c 'echo %s | tee /sys/fs/cgroup/%s/cgroup.procs'", line, ss->type_name);
             if (system(cmd) < 0){
-                sprintf(errbuf, "subsystem %s remove error.", ss->name);
+                sprintf(errbuf, "subsystem %s remove error.", ss->type_name);
                 perror(errbuf);
                 return -1;
             }
@@ -164,9 +179,9 @@ int subsystem_remove(subsystem *ss)
     
     fclose(file);
     memset(cmd, 0, 300);
-    sprintf(cmd, "rmdir %s", dirpath);
+    sprintf(cmd, "rmdir %s", ss->ctl_root);
     if (system(cmd) < 0){
-        sprintf(errbuf, "subsystem %s remove error.", ss->name);
+        sprintf(errbuf, "subsystem %s remove error.", ss->type_name);
         perror(errbuf);
         return -1;
     }

@@ -9,7 +9,7 @@
 
 #define CPU_CFS_QUOTA_US "cpu.cfs_quota_us"
 #define CPU_CFS_PERIOD_US "cpu.cfs_period_us"
-#define DEFAULT_CPU_CFS_QUOTA_US "100000"
+#define DEFAULT_CPU_CFS_PERIOD_US "100000"
 
 #define CPUSET_CPUS "cpuset.cpus"
 
@@ -22,15 +22,20 @@
 
 typedef struct{
     resource_type t;
-    char *name;
-    char *ctlfile;
-}subsystem;
+    int _;
+    char *type_name;
+    char *ctl_root;
+    char *ctl_file;
+    char *tasks_file;
+    char *procs_file;
+}subsystem_t;
 
 // create subsystem
-subsystem *init_subsystem(resource_type t);
+subsystem_t *init_subsystem(resource_type t, char *container_id);
 
 // 
-int subsystem_set(subsystem *ss, char *resource);
-int subsystem_remove(subsystem *ss) ;
-int subsystem_add(subsystem *ss, pid_t pid) ;
+int subsystem_set(subsystem_t *ss, char *resource);
+int subsystem_remove(subsystem_t *ss) ;
+int subsystem_add(subsystem_t *ss, pid_t pid);
+
 #endif
