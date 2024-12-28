@@ -14,7 +14,7 @@ printf(
     -P  Veth ip of host. Default is '10.0.0.1/24'\n\
     -B  [OPTIONAL] Virtual bridge id, must be exist. Connect host veth to bridge(if given)\n\
     -c  CPU limit by cgroups. [0 ~ 100000 * cpu_count]. Default is 50000 (50%% in single core)\n\
-    -m  Memory limit (in byte) by cgroups. [0 ~ host_memory]. Default is 5242880 (512MB)\n\
+    -m  Memory limit (in byte) by cgroups. [0 ~ host_memory]. Default is 524288000 (512MB)\n\
 ");
 }
 
@@ -35,7 +35,9 @@ int parse_args(int argc, char **argv, lc_args *lca)
     for (int i = 1;i < argc; i+=2){
         char *flag = argv[i];
         char *value = argv[i+1];
-
+        if (strcmp(value, "")) {
+            continue;
+        }
         switch (flag[1])
         {
         case 'h':

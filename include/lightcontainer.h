@@ -14,15 +14,6 @@ typedef struct
     veth_t veth;
 }container_t;
 
-
-// typedef struct {
-//     char *vethID;
-//     char *nrfs;
-//     char *orfs;
-//     char *hostname;
-//     char *vethIP;
-// }lc_opt;
-
 pid_t run_container(void *args);
 
 #endif

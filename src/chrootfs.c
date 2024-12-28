@@ -16,7 +16,6 @@ int chrootfs(char *nrfs, char *orfs){
     
     char oldroot[128];
     sprintf(oldroot, "%s/%s", nrfs, orfs);
-    // printf("%s\n", oldroot);
     struct stat s; 
     if((stat(oldroot, &s) != 0) && mkdir(oldroot, 0777) < 0){
         perror("make old root fs error");
