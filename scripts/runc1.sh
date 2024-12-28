@@ -24,17 +24,18 @@ CONTAINER_VETH_IP="10.0.1.2/24"
 CPU_LIMIT_PERCENT=0.3
 MEM_LIMIT_IN_MB=512
 
-# do not modify the following
+# DO NOT edit the following
 MB=1048576
 CPU_CFS_PERIOD_US=100000
-CPU_LIMIT=$(echo "scale=0; $CPU_LIMIT_PERCENT * $CPU_CFS_PERIOD_US" | bc)
-MEM_LIMIT=$(echo "sacle=0; $MB * $MEM_LIMIT_IN_MB" | bc)
+CPU_LIMIT=$(echo "$CPU_LIMIT_PERCENT * $CPU_CFS_PERIOD_US / 1" | bc)
+MEM_LIMIT=$(echo "$MB * $MEM_LIMIT_IN_MB / 1" | bc)
 
 if [ -n $BRIDGE_ID ]; then 
     SCRIPT_DIR=$(dirname "$0")
     ./$SCRIPT_DIR/setup.sh $BRIDGE_ID
 fi
 
+echo $CPU_LIMIT
 ./bin/lightcontainer \
     -n $NEW_ROOTFS_PATH \
     -o $OLD_ROOTFS_PATH \

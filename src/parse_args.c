@@ -35,7 +35,7 @@ int parse_args(int argc, char **argv, lc_args *lca)
     for (int i = 1;i < argc; i+=2){
         char *flag = argv[i];
         char *value = argv[i+1];
-        if (strcmp(value, "")) {
+        if (strcmp(value, "") == 0) {
             continue;
         }
         switch (flag[1])
