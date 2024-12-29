@@ -21,7 +21,7 @@ CONTAINER_VETH_IP="10.0.1.4/24"
 
 # cgroups
 # percent from [0 ~ core_number]
-CPU_LIMIT_PERCENT=0.3
+CPU_LIMIT_PERCENT=0.5
 MEM_LIMIT_IN_MB=512
 
 # DO NOT edit the following

@@ -86,7 +86,7 @@ int lightcontainer(void *args)
         return -1;
     }
    
-    char *exargs[] = {"ls", NULL};
+    char *exargs[] = {"/bin/bash", NULL};
     if (execv("/bin/bash", exargs) < 0) {
         perror("execv error");
         return -1;
